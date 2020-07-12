@@ -1,0 +1,81 @@
+[
+  {
+    "id": 1,
+    "keywords": [
+      ["remove", "delete"],
+      "docker",
+      "image"
+    ],
+    "examples": [
+      {
+        "title": "Remove all images",
+        "command": "docker rmi $(docker images -a -q)"
+      },
+      {
+        "title": "Remove images not referenced by any container",
+        "command": "docker image prune -a"
+      }
+    ],
+    "url": "remove-docker-images"
+  },
+  {
+    "id": 2,
+    "keywords": [
+      ["create", "make"],
+      ["directory", "folder"]
+    ],
+    "examples": [
+      {
+        "title": "Create directory",
+        "command": "mkdir <directory_name>"
+      }
+    ],
+    "url": "create-directory"
+  },
+  {
+    "id": 3,
+    "keywords": [
+      ["make", "create", "add"],
+      "multiple", 
+      ["directory", "folder", "folders", "directories"]
+    ],
+    "examples": [
+      {
+        "title": "Create all directories along path",
+        "command": "mkdir -p x/y/z"
+      }
+    ],
+    "url": "create-multiple-directories"
+  },
+  {
+    "id": 4,
+    "keywords": [
+      ["execute", "run"],
+      ["inside", "within"], 
+      "docker",
+      "container"
+    ],
+    "examples": [
+      {
+        "title": "Start a shell inside a docker container",
+        "command": "docker exec -it <container_id> bash"
+      }
+    ],
+    "url": "start-shell-inside-docker-container"
+  },
+  {
+    "id": 5,
+    "keywords": [
+      ["delete", "remove"],
+      "docker",
+      "container"
+    ],
+    "examples": [
+      {
+        "title": "Remove all stopped docker containers",
+        "command": "docker rm $(docker ps -a -q)"
+      }
+    ],
+    "url": "remove-docker-container"
+  }
+]

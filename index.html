@@ -1,0 +1,242 @@
+<html lang="en">
+  <head>
+    <style>
+      main {
+        width: 100%;
+        margin: auto;
+        margin-top: 20px;
+      }
+
+      header {
+        width: 100%;
+        margin: auto;
+        margin-top: 40px;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        background-color: #f6f8fa;
+      }
+
+      h1 {
+        text-align: center;
+        font-family: Arial, Helvetica, sans-serif;
+      }
+
+      h2 {
+        margin: 0;
+        padding: 0;
+        font-family: Arial, Helvetica, sans-serif;
+        font-size: 0.9rem;
+        font-weight: bold;
+        margin-bottom: 8px;
+      }
+
+      @media (min-width: 576px) {
+        main, header {
+          width: 540px;
+        }
+      }
+
+      @media (min-width: 768px) {
+        main, header {
+          width: 720px;
+        }
+      }
+
+      #commands {
+        padding: 30px;
+        padding-top: 24px;
+        padding-bottom: 24px;
+        margin-top: 16px;
+        box-shadow: 3px 3px 9px 0px rgba(0,0,0,0.5);
+        border-radius: 20px;
+        background-color: white;
+        transition: all 0.3s;
+      }
+
+      #commands.show {
+        opacity: 1;
+        transform: translateY(0);
+      }
+
+      #commands.hide {
+        opacity: 0;
+        transform: translateY(50px);
+      }
+
+      pre {
+        background-color: #f6f8fa;
+        padding: 16px;
+        font-size: 1.4rem;
+        margin: 0;
+        border-radius: 4px;
+      }
+
+      article:last-child {
+        margin-bottom: 0;
+      }
+
+      article {
+        margin-bottom: 24px;
+      }
+
+      input[type='text'] {
+        padding: 20px;
+        padding-top: 16px;
+        padding-bottom: 16px;
+        font-size: 1rem;
+        width: 100%;
+        border-radius: 20px;
+        border: 1px solid black;
+        outline: none;
+      }
+
+      input[type='text']:focus {
+        border: 1px solid blue;
+      }
+    </style>
+
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+  </head>
+  <body>
+    <header>
+      <h1>Unix Commands Quick Reference</h1>
+    </header>
+    <main>
+      <input id="searchField" placeholder="What do you want to do?" aria-label="What do you want to do?" type="text" />
+      <section class="hide" id="commands"></section>
+    </main>
+
+    <script>
+      var commands = [];
+      var startedTyping = false;
+
+      fetch("/commands.json")
+        .then(function (res) {
+          return res.json();
+        })
+        .then(function (data) {
+          commands = data;
+
+          if (!startedTyping) {
+            const match = window.location.pathname.match(/^\/(\d)/);
+            if (match) {
+              const commandId = match[1];
+              updateSearchResults(commandId);
+            }
+          }
+        });
+
+      document.getElementById("searchField").addEventListener("input", function () {
+        startedTyping = true;
+        updateSearchResults();
+      });
+
+      function getCommandById(commandId) {
+        for (let i = 0; i < commands.length; i++) {
+          if (commandId.toString() === commands[i].id.toString()) {
+            return commands[i];
+          }
+        }
+
+        return null;
+      }
+
+      function updateSearchResults(commandId) {
+        var command = commandId ? getCommandById(commandId) : getCommand();
+        console.log("command", command);
+
+        if (command) {
+          document.getElementById("commands").innerText = "";
+        }
+
+        if (command) {
+          document.getElementById("commands").className = "show";
+        } else {
+          document.getElementById("commands").className = "hide";
+        }
+        
+        if (command) {
+          for (var i = 0; i < command.examples.length; i++) {
+            var example = command.examples[i];
+            
+            var exampleContainer = document.createElement("article");
+            var heading = document.createElement("h2");
+            var commandContainer = document.createElement("pre");
+            var commandCode = document.createElement("code");
+
+            heading.innerText = example.title;
+            commandCode.innerText = example.command;
+            
+            commandContainer.appendChild(commandCode);
+            exampleContainer.appendChild(heading);
+            exampleContainer.appendChild(commandContainer);
+            document.getElementById("commands").appendChild(exampleContainer);
+          }
+
+          window.history.replaceState({}, "", "/" + command.id + "/" + command.url, {})
+        }
+      }
+
+      function getCommand() {
+        var result = null;
+        var currentHighestMatchScore = 0;
+        var currentTiebreakerScore = 0;
+
+        for (var i = 0; i < commands.length; i++) {
+          var command = commands[i];
+          var matchScores = getMatchScore(document.getElementById("searchField").value, command);
+          
+          if (matchScores.score > currentHighestMatchScore) {
+            currentHighestMatchScore = matchScores.score;
+            currentTiebreakerScore = matchScores.tiebreakerScore;
+            result = command;
+          } else if (matchScores.score === currentHighestMatchScore && currentHighestMatchScore !== 0 && matchScores.tiebreakerScore > currentTiebreakerScore) {
+            currentHighestMatchScore = matchScores.score;
+            currentTiebreakerScore = matchScores.tiebreakerScore;
+            result = command;
+          }
+        }
+
+        return result;
+      }
+
+      function getMatchScore(text, command) {
+        var lowerCaseText = text.toLowerCase();
+        var keywordCount = 0;
+
+        for (var i = 0; i < command.keywords.length; i++) {
+          var keyword = command.keywords[i];
+          if (typeof keyword === "string") {
+            if (lowerCaseText.indexOf(keyword) > -1) {
+              keywordCount++;
+            }
+          } else {
+            for (var j = 0; j < keyword.length; j++) {
+              if (lowerCaseText.indexOf(keyword[j]) > -1) {
+                keywordCount++;
+                break;
+              }
+            }
+          }
+        }
+
+        if (keywordCount === 0) {
+          return {
+            score: 0,
+            tiebreakerScore: 0
+          }
+        }
+
+        return {
+          score: keywordCount / command.keywords.length,
+          tiebreakerScore: keywordCount
+        }
+      }
+    </script>
+  </body>
+</html>
